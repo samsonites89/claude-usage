@@ -5,11 +5,19 @@ Screen {
     align: center top;
 }
 
+ClawdBanner {
+    height: 5;
+    width: 100%;
+    max-width: 220;
+    text-align: center;
+    border: solid $accent;
+    padding: 1 0;
+}
+
 #main {
     layout: horizontal;
     height: 1fr;
     max-width: 220;
-    max-height: 55;
 }
 
 #right {

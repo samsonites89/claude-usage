@@ -11,7 +11,7 @@ from typing import ClassVar
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
-from textual.widgets import Footer, Header
+from textual.widgets import Footer, Header, Static
 
 from claude_usage import parser
 from claude_usage.components import DailyChart, RefreshPopup, SessionsTable, SummaryPanel, WeeklyChart
@@ -20,10 +20,20 @@ from claude_usage.utils import _fmt, _fmt_cost
 
 REFRESH_INTERVAL = int(os.environ.get("CLAUDE_USAGE_REFRESH_INTERVAL", 60))
 
+_CLAWD_ART = (
+    " [bold cyan]▐▛███▜▌[/bold cyan]  [bold magenta]clawd[/bold magenta]\n"
+    "[bold cyan]▝▜█████▛▘[/bold cyan]\n"
+    "  [dim]▘▘ ▝▝[/dim]"
+)
+
+
+class ClawdBanner(Static):
+    def render(self) -> str:
+        return _CLAWD_ART
+
 
 class ClaudeUsageApp(App):
     TITLE = "clawd"
-    SUB_TITLE = "Claude Code token usage"
     CSS_PATH = "styles/app.tcss"
     BINDINGS: ClassVar[list[Binding]] = [
         Binding("r", "refresh", "Refresh"),
@@ -34,6 +44,7 @@ class ClaudeUsageApp(App):
 
     def compose(self) -> ComposeResult:
         yield Header()
+        yield ClawdBanner()
         with Horizontal(id="main"):
             yield SummaryPanel()
             with Vertical(id="right"):
