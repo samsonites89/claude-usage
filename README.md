@@ -97,11 +97,13 @@ cp .env.example ~/.claude_usage.env
 |---|---|---|
 | `ANTHROPIC_API_KEY` | — | Anthropic API key for the live rate-limit fetch (press `L`). Not needed if you use Claude Code. |
 | `CLAUDE_USAGE_REFRESH_INTERVAL` | `30` | Dashboard auto-refresh interval in seconds. |
+| `CLAUDE_USAGE_LIMITS_REFRESH_INTERVAL` | `300` | How often (seconds) to silently re-fetch live SESSION/WEEK rate limits in the background. |
 
 **Example `~/.claude_usage.env`:**
 ```env
 ANTHROPIC_API_KEY=sk-ant-...
 CLAUDE_USAGE_REFRESH_INTERVAL=20
+CLAUDE_USAGE_LIMITS_REFRESH_INTERVAL=120
 ```
 
 ---
@@ -139,10 +141,20 @@ Costs are displayed as `~$X.XXXX (est.)` since different Claude models have diff
 claude-usage/
 ├── claude_usage/
 │   ├── __init__.py
-│   ├── parser.py      # reads and aggregates ~/.claude JSONL logs
-│   └── app.py         # Textual TUI layout
-├── run.py             # legacy entry point (still works)
-├── pyproject.toml     # package definition and claude-usage CLI entry point
+│   ├── parser.py          # reads and aggregates ~/.claude JSONL logs
+│   ├── utils.py           # shared formatting helpers (_fmt, _bar, etc.)
+│   ├── app.py             # ClaudeUsageApp entry point and data loading
+│   ├── components/        # Textual widgets, one file each
+│   │   ├── __init__.py
+│   │   ├── summary_panel.py
+│   │   ├── daily_chart.py
+│   │   ├── weekly_chart.py
+│   │   ├── sessions_table.py
+│   │   └── refresh_popup.py
+│   └── styles/
+│       └── app.tcss       # all Textual CSS
+├── run.py                 # legacy entry point (still works)
+├── pyproject.toml         # package definition and claude-usage CLI entry point
 ├── requirements.txt
 └── README.md
 ```
