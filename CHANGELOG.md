@@ -1,5 +1,36 @@
 # Changelog
 
+## [1.1.0] - 2026-05-09
+
+### Features
+- Live rate limits (SESSION / WEEK) are now fetched automatically on every refresh cycle — no separate `L` key needed
+- Default refresh interval changed from 30s to 60s
+
+### Removed
+- `L` keybinding for manual rate-limit fetch (now happens automatically with every refresh)
+- `CLAUDE_USAGE_LIMITS_REFRESH_INTERVAL` env var (no longer needed)
+
+## [1.0.5] - 2026-05-09
+
+### Features
+- `--plan {pro,max_5x,max_20x}`: override the plan for budget calculations without editing the config file; affects the dashboard bars, `--summary`, and `--json` output
+
+## [1.0.4] - 2026-05-09
+
+### Fixes
+- Cost values now display with 2 decimal places instead of 4 (e.g. `~$1.23` not `~$1.2345`)
+
+## [1.0.3] - 2026-05-09
+
+### Features
+- `--summary` flag: print a plain-text usage summary (all-time, today, this week, cache, rate limits) and exit — no TUI required
+- `--json` flag: output the same data as machine-readable JSON and exit
+
+## [1.0.2] - 2026-05-09
+
+### Features
+- Gate startup on `claude` CLI presence — exits with a clear error message if `claude` is not found in `PATH`
+
 ## [1.0.1] - 2026-05-09
 
 ### Chores
@@ -8,7 +39,7 @@
 ## [1.0.0] - 2026-05-09
 
 ### Features
-- `--version` / `-V` flag prints program name and version
+- `--version` / `-V` flag prints program name and exit — no TUI required
 - Centered modal popup on `r` and `l` with auto-dismiss; shows timestamp, today's token count/cost, and all-time request count on refresh; shows success/error on rate-limit fetch
 - Daily and weekly usage bar charts (last 14 days / last 8 weeks)
 - Recent sessions table sorted by last activity (last 20)

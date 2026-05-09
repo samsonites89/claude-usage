@@ -2,11 +2,14 @@
 
 Screen {
     layout: vertical;
+    align: center top;
 }
 
 #main {
     layout: horizontal;
     height: 1fr;
+    max-width: 220;
+    max-height: 55;
 }
 
 #right {
@@ -23,7 +26,7 @@ Screen {
 /* ── SummaryPanel ──────────────────────────────────────────────── */
 
 SummaryPanel {
-    width: 36;
+    width: 38;
     height: 100%;
     border: solid $primary;
     padding: 1 2;

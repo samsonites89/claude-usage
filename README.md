@@ -21,7 +21,8 @@ Reads directly from `~/.claude/projects/` — no extra configuration needed.
 ## Requirements
 
 - Python 3.10+
-- Claude Code CLI installed and used at least once (data lives in `~/.claude/`)
+- [Claude Code](https://claude.ai/code) CLI installed and available in `PATH` (`claude` command must be found) — `claude-usage` will exit with an error if it is not present
+- Claude Code used at least once so that usage data exists in `~/.claude/`
 
 ---
 
@@ -95,28 +96,53 @@ cp .env.example ~/.claude_usage.env
 
 | Variable | Default | Description |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | — | Anthropic API key for the live rate-limit fetch (press `L`). Not needed if you use Claude Code. |
-| `CLAUDE_USAGE_REFRESH_INTERVAL` | `30` | Dashboard auto-refresh interval in seconds. |
-| `CLAUDE_USAGE_LIMITS_REFRESH_INTERVAL` | `300` | How often (seconds) to silently re-fetch live SESSION/WEEK rate limits in the background. |
+| `ANTHROPIC_API_KEY` | — | Anthropic API key for live rate-limit fetches. Not needed if you use Claude Code. |
+| `CLAUDE_USAGE_REFRESH_INTERVAL` | `60` | Dashboard auto-refresh interval in seconds. Live rate limits are fetched on every refresh. |
 
 **Example `~/.claude_usage.env`:**
 ```env
 ANTHROPIC_API_KEY=sk-ant-...
-CLAUDE_USAGE_REFRESH_INTERVAL=20
-CLAUDE_USAGE_LIMITS_REFRESH_INTERVAL=120
+CLAUDE_USAGE_REFRESH_INTERVAL=60
 ```
 
 ---
 
 ## Usage
 
+```bash
+claude-usage            # launch the interactive dashboard
+claude-usage --summary  # print a plain-text summary and exit
+claude-usage --json     # output usage data as JSON and exit
+```
+
+### Interactive dashboard keys
+
 | Key | Action |
 |-----|--------|
-| `R` | Refresh data immediately |
-| `L` | Fetch live rate limits from Anthropic API |
+| `R` | Refresh data and fetch live rate limits immediately |
 | `Q` | Quit |
 
-The dashboard auto-refreshes every 30 seconds while open.
+The dashboard auto-refreshes every 60 seconds while open. Live rate limits (SESSION / WEEK) are fetched automatically on every refresh cycle.
+
+### Non-interactive modes
+
+`--summary` and `--json` print to stdout and exit immediately — no TUI is launched. Both include all-time totals, today, this week, cache token counts, and live rate-limit data (SESSION / WEEK) if a cached fetch is available.
+
+```bash
+# pipe JSON into jq
+claude-usage --json | jq '.all_time.estimated_cost'
+```
+
+### CLI flags
+
+| Flag | Description |
+|------|-------------|
+| `--summary` | Print plain-text usage summary and exit |
+| `--json` | Output usage data as JSON and exit |
+| `--plan PLAN` | Override plan for budget calculations (`pro`, `max_5x`, `max_20x`) |
+
+The `--plan` flag overrides the plan set in `~/.claude_usage_config.json` for a single run.
+
 
 ---
 

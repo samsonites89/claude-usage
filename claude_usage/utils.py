@@ -22,7 +22,7 @@ def _fmt(n: int) -> str:
 
 
 def _fmt_cost(cost: float) -> str:
-    return f"~${cost:.4f}"
+    return f"~${cost:.2f}"
 
 
 def _pct(value: float, limit: float) -> str:
