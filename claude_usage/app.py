@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from datetime import date, datetime, timedelta, timezone
 from typing import ClassVar
 
@@ -13,7 +14,7 @@ from textual.worker import Worker, WorkerState
 from claude_usage import parser
 
 
-REFRESH_INTERVAL = 30  # seconds
+REFRESH_INTERVAL = int(os.environ.get("CLAUDE_USAGE_REFRESH_INTERVAL", 30))
 
 
 def _bar(value: float, max_value: float, width: int = 20) -> str:
@@ -363,3 +364,7 @@ class ClaudeUsageApp(App):
 
     def action_quit(self) -> None:
         self.exit()
+
+
+def main() -> None:
+    ClaudeUsageApp().run()
