@@ -2,7 +2,7 @@
 
 A terminal dashboard for visualizing your [Claude Code](https://claude.ai/code) CLI token usage.
 
-Reads directly from `~/.claude/projects/` — no API key or configuration needed.
+Reads directly from `~/.claude/projects/` — no extra configuration needed.
 
 ![dashboard layout: summary panel on the left, daily bar chart and sessions table on the right]
 
@@ -11,7 +11,9 @@ Reads directly from `~/.claude/projects/` — no API key or configuration needed
 - Lifetime token totals (input, output, cache write, cache read)
 - Estimated cost based on Sonnet 4.x pricing
 - Daily usage bar chart (last 14 days)
+- Weekly usage bar chart (last 8 weeks)
 - Recent sessions table sorted by last activity
+- Live rate limit fetch via Anthropic API (press `L`)
 - Auto-refreshes every 30 seconds; press `R` to refresh manually
 
 ---
@@ -25,70 +27,82 @@ Reads directly from `~/.claude/projects/` — no API key or configuration needed
 
 ## Installation
 
+The recommended way is **pipx**, which installs the tool into its own isolated environment and adds a `claude-usage` command to your PATH.
+
 ### macOS
 
-1. **Check your Python version** (macOS ships Python 3.x; Homebrew is recommended for a clean install):
-   ```bash
-   python3 --version
-   ```
-   If you need Python: `brew install python`
+```bash
+# 1. Install pipx (if not already installed)
+brew install pipx
+pipx ensurepath
 
-2. **Clone the repo:**
-   ```bash
-   git clone https://github.com/samsonites89/claude-usage.git ~/claude-usage
-   cd ~/claude-usage
-   ```
+# 2. Clone and install
+git clone https://github.com/samsonites89/claude-usage.git
+cd claude-usage
+pipx install .
 
-3. **Create a virtual environment and install dependencies:**
-   ```bash
-   python3 -m venv .venv
-   source .venv/bin/activate
-   pip install -r requirements.txt
-   ```
-
-4. **Run:**
-   ```bash
-   python3 run.py
-   ```
-
-   To launch it from anywhere without activating the venv each time, add a shell alias:
-   ```bash
-   # Add to ~/.zshrc or ~/.bashrc
-   alias claude-usage="source ~/claude-usage/.venv/bin/activate && python3 ~/claude-usage/run.py"
-   ```
-
----
+# 3. Run from anywhere
+claude-usage
+```
 
 ### Ubuntu / Debian
 
-1. **Install Python and venv** (if not already present):
-   ```bash
-   sudo apt-get update
-   sudo apt-get install -y python3 python3-venv
-   ```
+```bash
+# 1. Install pipx
+sudo apt-get update && sudo apt-get install -y pipx
 
-2. **Clone the repo:**
-   ```bash
-   git clone https://github.com/samsonites89/claude-usage.git ~/claude-usage
-   cd ~/claude-usage
-   ```
+# 2. Add pipx's bin directory to your PATH
+pipx ensurepath
 
-3. **Create a virtual environment and install dependencies:**
-   ```bash
-   python3 -m venv .venv
-   source .venv/bin/activate
-   pip install -r requirements.txt
-   ```
+# 3. Reload your shell so the PATH change takes effect
+source ~/.bashrc
+```
 
-4. **Run:**
-   ```bash
-   python3 run.py
-   ```
+> **Important:** steps 2 and 3 are required. If you skip `source ~/.bashrc` (or opening a new terminal), the `claude-usage` command will not be found even after a successful install.
 
-   Optional alias in `~/.bashrc`:
-   ```bash
-   alias claude-usage="source ~/claude-usage/.venv/bin/activate && python3 ~/claude-usage/run.py"
-   ```
+```bash
+# 4. Clone and install
+git clone https://github.com/samsonites89/claude-usage.git
+cd claude-usage
+pipx install .
+
+# 5. Run from anywhere
+claude-usage
+```
+
+---
+
+### Alternative: virtual environment (no pipx)
+
+```bash
+git clone https://github.com/samsonites89/claude-usage.git
+cd claude-usage
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python3 run.py
+```
+
+---
+
+## Configuration (optional)
+
+Settings are read from `~/.claude_usage.env`. Copy the example file to get started:
+
+```bash
+cp .env.example ~/.claude_usage.env
+```
+
+| Variable | Default | Description |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | — | Anthropic API key for the live rate-limit fetch (press `L`). Not needed if you use Claude Code. |
+| `CLAUDE_USAGE_REFRESH_INTERVAL` | `30` | Dashboard auto-refresh interval in seconds. |
+
+**Example `~/.claude_usage.env`:**
+```env
+ANTHROPIC_API_KEY=sk-ant-...
+CLAUDE_USAGE_REFRESH_INTERVAL=20
+```
 
 ---
 
@@ -97,6 +111,7 @@ Reads directly from `~/.claude/projects/` — no API key or configuration needed
 | Key | Action |
 |-----|--------|
 | `R` | Refresh data immediately |
+| `L` | Fetch live rate limits from Anthropic API |
 | `Q` | Quit |
 
 The dashboard auto-refreshes every 30 seconds while open.
@@ -124,9 +139,10 @@ Costs are displayed as `~$X.XXXX (est.)` since different Claude models have diff
 claude-usage/
 ├── claude_usage/
 │   ├── __init__.py
-│   ├── parser.py   # reads and aggregates ~/.claude JSONL logs
-│   └── app.py      # Textual TUI layout
-├── run.py
+│   ├── parser.py      # reads and aggregates ~/.claude JSONL logs
+│   └── app.py         # Textual TUI layout
+├── run.py             # legacy entry point (still works)
+├── pyproject.toml     # package definition and claude-usage CLI entry point
 ├── requirements.txt
 └── README.md
 ```

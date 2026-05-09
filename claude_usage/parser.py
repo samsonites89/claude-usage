@@ -1,19 +1,182 @@
 from __future__ import annotations
 
 import json
+import os
+import urllib.request
+import urllib.error
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+# Load API key from ~/.claude_usage.env (user-level config, never committed)
+load_dotenv(Path.home() / ".claude_usage.env")
 
 CLAUDE_DIR = Path.home() / ".claude" / "projects"
+CONFIG_FILE = Path.home() / ".claude_usage_config.json"
+CREDENTIALS_FILE = Path.home() / ".claude" / ".credentials.json"
+LIMITS_CACHE_FILE = Path.home() / ".claude_usage_limits_cache.json"
 
 # Approximate Sonnet 4.x pricing per million tokens
 PRICE_INPUT = 3.00
 PRICE_OUTPUT = 15.00
 PRICE_CACHE_WRITE = 3.75
 PRICE_CACHE_READ = 0.30
+
+PLANS: dict[str, dict] = {
+    "pro": {
+        "label": "Pro",
+        "monthly_budget": 20.0,
+    },
+    "max_5x": {
+        "label": "Max 5×",
+        "monthly_budget": 100.0,
+    },
+    "max_20x": {
+        "label": "Max 20×",
+        "monthly_budget": 200.0,
+    },
+}
+
+
+@dataclass
+class PlanConfig:
+    plan_key: str
+    label: str
+    monthly_budget: float
+
+    @property
+    def daily_budget(self) -> float:
+        return self.monthly_budget / 30
+
+    @property
+    def weekly_budget(self) -> float:
+        return self.monthly_budget / 4.33
+
+
+def load_plan_config() -> PlanConfig | None:
+    if not CONFIG_FILE.exists():
+        return None
+    try:
+        obj = json.loads(CONFIG_FILE.read_text())
+        key = obj.get("plan", "").lower()
+        plan = PLANS.get(key)
+        if plan:
+            return PlanConfig(plan_key=key, label=plan["label"], monthly_budget=plan["monthly_budget"])
+    except (json.JSONDecodeError, OSError):
+        pass
+    return None
+
+
+@dataclass
+class RateLimits:
+    session_utilization: float       # 0.0–1.0
+    session_reset_at: datetime
+    weekly_utilization: float        # 0.0–1.0
+    weekly_reset_at: datetime
+    fetched_at: datetime
+
+    @property
+    def session_pct(self) -> float:
+        return self.session_utilization * 100
+
+    @property
+    def weekly_pct(self) -> float:
+        return self.weekly_utilization * 100
+
+
+def load_rate_limits_cache() -> RateLimits | None:
+    if not LIMITS_CACHE_FILE.exists():
+        return None
+    try:
+        obj = json.loads(LIMITS_CACHE_FILE.read_text())
+        return RateLimits(
+            session_utilization=obj["session_utilization"],
+            session_reset_at=datetime.fromisoformat(obj["session_reset_at"]),
+            weekly_utilization=obj["weekly_utilization"],
+            weekly_reset_at=datetime.fromisoformat(obj["weekly_reset_at"]),
+            fetched_at=datetime.fromisoformat(obj["fetched_at"]),
+        )
+    except (KeyError, ValueError, OSError, json.JSONDecodeError):
+        return None
+
+
+def _get_auth_headers() -> dict[str, str] | None:
+    """Returns auth headers, preferring Claude Code OAuth then ANTHROPIC_API_KEY."""
+    try:
+        creds = json.loads(CREDENTIALS_FILE.read_text())
+        token = creds["claudeAiOauth"]["accessToken"]
+        return {"Authorization": f"Bearer {token}"}
+    except (OSError, KeyError, json.JSONDecodeError):
+        pass
+
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
+    if api_key:
+        return {"x-api-key": api_key}
+
+    return None
+
+
+def fetch_rate_limits() -> RateLimits | None:
+    """Makes a minimal API call (Haiku, 1 token) to get real rate limit headers from Anthropic."""
+    auth = _get_auth_headers()
+    if auth is None:
+        return None
+
+    body = json.dumps({
+        "model": "claude-haiku-4-5",
+        "max_tokens": 1,
+        "messages": [{"role": "user", "content": "x"}],
+    }).encode()
+
+    req = urllib.request.Request(
+        "https://api.anthropic.com/v1/messages",
+        data=body,
+        headers={
+            **auth,
+            "anthropic-version": "2023-06-01",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            headers = {k.lower(): v for k, v in resp.headers.items()}
+    except urllib.error.HTTPError as e:
+        headers = {k.lower(): v for k, v in e.headers.items()}
+    except OSError:
+        return None
+
+    try:
+        s_util = float(headers.get("anthropic-ratelimit-unified-5h-utilization", 0))
+        s_reset = datetime.fromtimestamp(int(headers["anthropic-ratelimit-unified-5h-reset"]), tz=timezone.utc)
+        w_util = float(headers.get("anthropic-ratelimit-unified-7d-utilization", 0))
+        w_reset = datetime.fromtimestamp(int(headers["anthropic-ratelimit-unified-7d-reset"]), tz=timezone.utc)
+    except (KeyError, ValueError):
+        return None
+
+    now = datetime.now(tz=timezone.utc)
+    limits = RateLimits(
+        session_utilization=s_util,
+        session_reset_at=s_reset,
+        weekly_utilization=w_util,
+        weekly_reset_at=w_reset,
+        fetched_at=now,
+    )
+    try:
+        LIMITS_CACHE_FILE.write_text(json.dumps({
+            "session_utilization": s_util,
+            "session_reset_at": s_reset.isoformat(),
+            "weekly_utilization": w_util,
+            "weekly_reset_at": w_reset.isoformat(),
+            "fetched_at": now.isoformat(),
+        }))
+    except OSError:
+        pass
+    return limits
 
 
 @dataclass
@@ -109,7 +272,6 @@ def load_records() -> list[UsageRecord]:
         return records
 
     for jsonl_file in CLAUDE_DIR.rglob("*.jsonl"):
-        # Derive workspace label from the path segment under projects/
         parts = jsonl_file.relative_to(CLAUDE_DIR).parts
         workspace = parts[0].replace("-", "/").lstrip("/") if parts else "unknown"
 
@@ -137,11 +299,48 @@ def totals(records: list[UsageRecord]) -> Totals:
     return t
 
 
+def today_totals(records: list[UsageRecord]) -> Totals:
+    today = datetime.now(tz=timezone.utc).astimezone().date()
+    t = Totals()
+    for r in records:
+        if r.timestamp.astimezone().date() == today:
+            t.add(r)
+    return t
+
+
+def week_totals(records: list[UsageRecord]) -> Totals:
+    today = datetime.now(tz=timezone.utc).astimezone().date()
+    week_start = today - timedelta(days=today.weekday())
+    t = Totals()
+    for r in records:
+        if r.timestamp.astimezone().date() >= week_start:
+            t.add(r)
+    return t
+
+
+def window_totals(records: list[UsageRecord], start: datetime, end: datetime) -> Totals:
+    t = Totals()
+    for r in records:
+        if start <= r.timestamp <= end:
+            t.add(r)
+    return t
+
+
 def by_day(records: list[UsageRecord]) -> dict[date, Totals]:
     result: dict[date, Totals] = defaultdict(Totals)
     for r in records:
         day = r.timestamp.astimezone().date()
         result[day].add(r)
+    return dict(sorted(result.items()))
+
+
+def by_week(records: list[UsageRecord]) -> dict[date, Totals]:
+    """Returns totals keyed by the Monday of each week."""
+    result: dict[date, Totals] = defaultdict(Totals)
+    for r in records:
+        day = r.timestamp.astimezone().date()
+        monday = day - timedelta(days=day.weekday())
+        result[monday].add(r)
     return dict(sorted(result.items()))
 
 
