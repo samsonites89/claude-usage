@@ -9,3 +9,5 @@ build/
 venv/
 .env
 
+# IDE related
+.idea
