@@ -21,9 +21,10 @@ from claude_usage.utils import _fmt, _fmt_cost
 REFRESH_INTERVAL = int(os.environ.get("CLAUDE_USAGE_REFRESH_INTERVAL", 60))
 
 _CLAWD_ART = (
-    " [bold cyan]▐▛███▜▌[/bold cyan]  [bold magenta]clawd[/bold magenta]\n"
-    "[bold cyan]▝▜█████▛▘[/bold cyan]\n"
-    "  [dim]▘▘ ▝▝[/dim]"
+    "[bold dark_orange] ▐▛███▜▌ [/bold dark_orange]\n"
+    "[bold dark_orange]▝▜█████▛▘[/bold dark_orange]\n"
+    "[dark_orange]  ▘▘ ▝▝  [/dark_orange]\n"
+    "[bold dark_orange]  clawd  [/bold dark_orange]"
 )
 
 
