@@ -3,6 +3,8 @@ from __future__ import annotations
 import argparse
 import asyncio
 import os
+import shutil
+import sys
 from datetime import datetime, timedelta, timezone
 from typing import ClassVar
 
@@ -148,5 +150,11 @@ def main() -> None:
     ap = argparse.ArgumentParser(prog="claude-usage", description="Terminal dashboard for Claude Code token usage")
     ap.add_argument("-V", "--version", action="version", version=f"claude-usage {__version__}")
     ap.parse_args()
+
+    if shutil.which("claude") is None:
+        print("Error: the `claude` CLI is not installed or not in PATH.")
+        print("claude-usage requires Claude Code to be installed.")
+        print("See https://claude.ai/code to get started.")
+        sys.exit(1)
 
     ClaudeUsageApp().run()
