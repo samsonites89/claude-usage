@@ -22,7 +22,8 @@ REFRESH_INTERVAL = int(os.environ.get("CLAUDE_USAGE_REFRESH_INTERVAL", 60))
 
 
 class ClaudeUsageApp(App):
-    TITLE = "Claude Token Usage"
+    TITLE = "clawd"
+    SUB_TITLE = "Claude Code token usage"
     CSS_PATH = "styles/app.tcss"
     BINDINGS: ClassVar[list[Binding]] = [
         Binding("r", "refresh", "Refresh"),
