@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import urllib.request
 import urllib.error
 from collections import defaultdict
@@ -8,6 +9,10 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+# Load API key from ~/.claude_usage.env (user-level config, never committed)
+load_dotenv(Path.home() / ".claude_usage.env")
 
 CLAUDE_DIR = Path.home() / ".claude" / "projects"
 CONFIG_FILE = Path.home() / ".claude_usage_config.json"
@@ -98,12 +103,26 @@ def load_rate_limits_cache() -> RateLimits | None:
         return None
 
 
-def fetch_rate_limits() -> RateLimits | None:
-    """Makes a minimal API call (Haiku, 1 token) to get real rate limit headers from Anthropic."""
+def _get_auth_headers() -> dict[str, str] | None:
+    """Returns auth headers, preferring Claude Code OAuth then ANTHROPIC_API_KEY."""
     try:
         creds = json.loads(CREDENTIALS_FILE.read_text())
         token = creds["claudeAiOauth"]["accessToken"]
+        return {"Authorization": f"Bearer {token}"}
     except (OSError, KeyError, json.JSONDecodeError):
+        pass
+
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
+    if api_key:
+        return {"x-api-key": api_key}
+
+    return None
+
+
+def fetch_rate_limits() -> RateLimits | None:
+    """Makes a minimal API call (Haiku, 1 token) to get real rate limit headers from Anthropic."""
+    auth = _get_auth_headers()
+    if auth is None:
         return None
 
     body = json.dumps({
@@ -116,7 +135,7 @@ def fetch_rate_limits() -> RateLimits | None:
         "https://api.anthropic.com/v1/messages",
         data=body,
         headers={
-            "Authorization": f"Bearer {token}",
+            **auth,
             "anthropic-version": "2023-06-01",
             "Content-Type": "application/json",
         },
