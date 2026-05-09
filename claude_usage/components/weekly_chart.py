@@ -14,14 +14,14 @@ class WeeklyChart(Static):
     def render(self) -> str:
         data = self.week_data
         if not data:
-            return "[bold]WEEKLY USAGE[/bold]\n\n[dim]No data yet.[/dim]"
+            return "[bold dark_orange]▶[/bold dark_orange] [bold]WEEKLY USAGE[/bold]\n\n[dim]No data yet.[/dim]"
 
         today = datetime.now(tz=timezone.utc).astimezone().date()
         this_week_monday = today - timedelta(days=today.weekday())
         weeks = sorted(data.keys(), reverse=True)[:8]
         max_tokens = max((data[w].total_tokens for w in weeks), default=1)
 
-        lines = ["[bold]WEEKLY USAGE[/bold] (last 8 weeks)", ""]
+        lines = ["[bold dark_orange]▶[/bold dark_orange] [bold]WEEKLY USAGE[/bold] (last 8 weeks)", ""]
         for w in weeks:
             t = data[w]
             filled = min(round(t.total_tokens / max_tokens * 18), 18)

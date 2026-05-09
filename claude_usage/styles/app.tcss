@@ -6,12 +6,19 @@ Screen {
 }
 
 ClawdBanner {
-    height: 6;
+    height: 9;
     width: 100%;
     max-width: 220;
     text-align: center;
     border: solid $accent;
     padding: 1 0;
+}
+
+FooterBar {
+    height: 1;
+    width: 100%;
+    max-width: 220;
+    text-align: center;
 }
 
 #main {

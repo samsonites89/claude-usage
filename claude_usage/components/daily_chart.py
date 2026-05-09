@@ -14,13 +14,13 @@ class DailyChart(Static):
     def render(self) -> str:
         data = self.day_data
         if not data:
-            return "[bold]DAILY USAGE[/bold]\n\n[dim]No data yet.[/dim]"
+            return "[bold dark_orange]▶[/bold dark_orange] [bold]DAILY USAGE[/bold]\n\n[dim]No data yet.[/dim]"
 
         today = datetime.now(tz=timezone.utc).astimezone().date()
         days = sorted(data.keys(), reverse=True)[:14]
         max_tokens = max((data[d].total_tokens for d in days), default=1)
 
-        lines = ["[bold]DAILY USAGE[/bold] (last 14 days)", ""]
+        lines = ["[bold dark_orange]▶[/bold dark_orange] [bold]DAILY USAGE[/bold] (last 14 days)", ""]
         for d in days:
             t = data[d]
             filled = min(round(t.total_tokens / max_tokens * 18), 18)
