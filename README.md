@@ -21,7 +21,8 @@ Reads directly from `~/.claude/projects/` — no extra configuration needed.
 ## Requirements
 
 - Python 3.10+
-- Claude Code CLI installed and used at least once (data lives in `~/.claude/`)
+- [Claude Code](https://claude.ai/code) CLI installed and available in `PATH` (`claude` command must be found) — `claude-usage` will exit with an error if it is not present
+- Claude Code used at least once so that usage data exists in `~/.claude/`
 
 ---
 
