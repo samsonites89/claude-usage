@@ -35,7 +35,7 @@ Reads directly from `~/.claude/projects/` — no API key or configuration needed
 
 2. **Clone the repo:**
    ```bash
-   git clone <repo-url> ~/claude-usage
+   git clone https://github.com/samsonites89/claude-usage.git ~/claude-usage
    cd ~/claude-usage
    ```
 
@@ -69,7 +69,7 @@ Reads directly from `~/.claude/projects/` — no API key or configuration needed
 
 2. **Clone the repo:**
    ```bash
-   git clone <repo-url> ~/claude-usage
+   git clone https://github.com/samsonites89/claude-usage.git ~/claude-usage
    cd ~/claude-usage
    ```
 
