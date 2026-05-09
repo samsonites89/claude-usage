@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.0.4] - 2026-05-09
+
+### Fixes
+- Cost values now display with 2 decimal places instead of 4 (e.g. `~$1.23` not `~$1.2345`)
+
 ## [1.0.3] - 2026-05-09
 
 ### Features
