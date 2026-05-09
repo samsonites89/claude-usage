@@ -1,0 +1,73 @@
+/* ── Layout ────────────────────────────────────────────────────── */
+
+Screen {
+    layout: vertical;
+}
+
+#main {
+    layout: horizontal;
+    height: 1fr;
+}
+
+#right {
+    layout: vertical;
+    width: 1fr;
+    height: 100%;
+}
+
+#charts {
+    layout: horizontal;
+    height: 1fr;
+}
+
+/* ── SummaryPanel ──────────────────────────────────────────────── */
+
+SummaryPanel {
+    width: 36;
+    height: 100%;
+    border: solid $primary;
+    padding: 1 2;
+}
+
+/* ── DailyChart ────────────────────────────────────────────────── */
+
+DailyChart {
+    height: 1fr;
+    border: solid $primary;
+    padding: 1 2;
+    overflow-y: auto;
+}
+
+/* ── WeeklyChart ───────────────────────────────────────────────── */
+
+WeeklyChart {
+    height: 1fr;
+    border: solid $primary;
+    padding: 1 2;
+    overflow-y: auto;
+}
+
+/* ── SessionsTable ─────────────────────────────────────────────── */
+
+SessionsTable {
+    height: 1fr;
+    border: solid $primary;
+    padding: 1 2;
+    overflow-y: auto;
+}
+
+/* ── RefreshPopup ──────────────────────────────────────────────── */
+
+RefreshPopup {
+    align: center middle;
+    background: $background 0%;
+}
+
+RefreshPopup > Static {
+    width: auto;
+    height: auto;
+    padding: 2 6;
+    border: round $primary;
+    background: $surface;
+    text-align: center;
+}
