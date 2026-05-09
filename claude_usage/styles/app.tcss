@@ -6,7 +6,7 @@ Screen {
 }
 
 ClawdBanner {
-    height: 5;
+    height: 6;
     width: 100%;
     max-width: 220;
     text-align: center;
