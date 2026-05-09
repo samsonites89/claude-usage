@@ -24,13 +24,22 @@ _CLAWD_ART = (
     "[bold dark_orange] ▐▛███▜▌ [/bold dark_orange]\n"
     "[bold dark_orange]▝▜█████▛▘[/bold dark_orange]\n"
     "[dark_orange]  ▘▘ ▝▝  [/dark_orange]\n"
-    "[bold dark_orange]  clawd  [/bold dark_orange]"
+    "[bold dark_orange]  clawd  [/bold dark_orange]\n"
+    "[dim]· claude code · token usage ·[/dim]"
 )
 
 
 class ClawdBanner(Static):
     def render(self) -> str:
         return _CLAWD_ART
+
+
+class FooterBar(Static):
+    def render(self) -> str:
+        return (
+            "[dark_orange]▛█▜[/dark_orange]  "
+            "[dim]github.com/samsonites89  ·  made with clawd[/dim]"
+        )
 
 
 class ClaudeUsageApp(App):
@@ -53,6 +62,7 @@ class ClaudeUsageApp(App):
                     yield DailyChart()
                     yield WeeklyChart()
                 yield SessionsTable()
+        yield FooterBar()
         yield Footer()
 
     def on_mount(self) -> None:
