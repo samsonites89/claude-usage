@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import asyncio
 import os
 from datetime import datetime, timedelta, timezone
@@ -130,4 +131,10 @@ class ClaudeUsageApp(App):
 
 
 def main() -> None:
+    from claude_usage import __version__
+
+    ap = argparse.ArgumentParser(prog="claude-usage", description="Terminal dashboard for Claude Code token usage")
+    ap.add_argument("-V", "--version", action="version", version=f"claude-usage {__version__}")
+    ap.parse_args()
+
     ClaudeUsageApp().run()
