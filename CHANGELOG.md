@@ -1,0 +1,18 @@
+# Changelog
+
+## [1.0.0] - 2026-05-09
+
+### Features
+- `--version` / `-V` flag prints program name and version
+- Centered modal popup on `r` and `l` with auto-dismiss; shows timestamp, today's token count/cost, and all-time request count on refresh; shows success/error on rate-limit fetch
+- Daily and weekly usage bar charts (last 14 days / last 8 weeks)
+- Recent sessions table sorted by last activity (last 20)
+- Lifetime token totals with estimated cost (input, output, cache write/read)
+- Live rate-limit fetch via Anthropic API (`l`); session and weekly utilisation bars with reset countdown
+- Auto-refresh every 30 s; manual refresh with `r`
+
+### Chores
+- Split `app.py` into `components/` (one file per widget), `utils.py`, and `styles/app.tcss`
+- Added `.idea/` to `.gitignore`
+- Packaged as installable CLI (`pipx install .` → `claude-usage`)
+- `.env` / `~/.claude_usage.env` support for `ANTHROPIC_API_KEY` and `CLAUDE_USAGE_REFRESH_INTERVAL`
