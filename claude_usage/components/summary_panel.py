@@ -25,9 +25,10 @@ class SummaryPanel(Static):
 
         yield Static(
             "[bold cyan] /\\_/\\[/bold cyan]\n"
-            "[bold cyan]( [white]o.o[/white] )[/bold cyan]  [bold magenta]clawd[/bold magenta]\n"
+            "[bold cyan]( [white]o.o[/white] )[/bold cyan]\n"
             "[bold cyan] [dim]> ^ <[/dim][/bold cyan]"
         )
+        yield Static("[bold magenta]  c l a w d[/bold magenta]")
         yield Static("─" * 30)
 
         plan_label = f"[dim]{plan.label}[/dim]" if plan else "[dim]Pro[/dim]"
