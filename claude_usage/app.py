@@ -31,6 +31,8 @@ class ClaudeUsageApp(App):
         Binding("q", "quit", "Quit"),
     ]
 
+    plan_override: parser.PlanConfig | None = None
+
     def compose(self) -> ComposeResult:
         yield Header()
         with Horizontal(id="main"):
@@ -58,7 +60,7 @@ class ClaudeUsageApp(App):
         weekly = parser.by_week(records)
         sessions = parser.by_session(records)
         last_seen = parser.session_last_seen(records)
-        plan_config = parser.load_plan_config()
+        plan_config = self.plan_override or parser.load_plan_config()
         rl = parser.load_rate_limits_cache()
 
         if rl:
@@ -241,6 +243,12 @@ def main() -> None:
     ap.add_argument("-V", "--version", action="version", version=f"claude-usage {__version__}")
     ap.add_argument("--summary", action="store_true", help="Print a plain-text usage summary and exit")
     ap.add_argument("--json", action="store_true", help="Print usage data as JSON and exit")
+    ap.add_argument(
+        "--plan",
+        choices=["pro", "max_5x", "max_20x"],
+        metavar="PLAN",
+        help="Override plan for budget calculations: pro, max_5x, max_20x",
+    )
     args = ap.parse_args()
 
     if shutil.which("claude") is None:
@@ -257,4 +265,11 @@ def main() -> None:
         _print_json(parser.load_records())
         return
 
-    ClaudeUsageApp().run()
+    plan_override: parser.PlanConfig | None = None
+    if args.plan:
+        p = parser.PLANS[args.plan]
+        plan_override = parser.PlanConfig(plan_key=args.plan, label=p["label"], monthly_budget=p["monthly_budget"])
+
+    app = ClaudeUsageApp()
+    app.plan_override = plan_override
+    app.run()

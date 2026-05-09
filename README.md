@@ -136,6 +136,17 @@ The dashboard auto-refreshes every 30 seconds while open.
 claude-usage --json | jq '.all_time.estimated_cost'
 ```
 
+### CLI flags
+
+| Flag | Description |
+|------|-------------|
+| `--summary` | Print plain-text usage summary and exit |
+| `--json` | Output usage data as JSON and exit |
+| `--plan PLAN` | Override plan for budget calculations (`pro`, `max_5x`, `max_20x`) |
+
+The `--plan` flag overrides the plan set in `~/.claude_usage_config.json` for a single run.
+
+
 ---
 
 ## Cost estimates
