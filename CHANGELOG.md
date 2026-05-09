@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.1.0] - 2026-05-09
+
+### Features
+- Live rate limits (SESSION / WEEK) are now fetched automatically on every refresh cycle — no separate `L` key needed
+- Default refresh interval changed from 30s to 60s
+
+### Removed
+- `L` keybinding for manual rate-limit fetch (now happens automatically with every refresh)
+- `CLAUDE_USAGE_LIMITS_REFRESH_INTERVAL` env var (no longer needed)
+
 ## [1.0.5] - 2026-05-09
 
 ### Features

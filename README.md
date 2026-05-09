@@ -96,15 +96,13 @@ cp .env.example ~/.claude_usage.env
 
 | Variable | Default | Description |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | — | Anthropic API key for the live rate-limit fetch (press `L`). Not needed if you use Claude Code. |
-| `CLAUDE_USAGE_REFRESH_INTERVAL` | `30` | Dashboard auto-refresh interval in seconds. |
-| `CLAUDE_USAGE_LIMITS_REFRESH_INTERVAL` | `300` | How often (seconds) to silently re-fetch live SESSION/WEEK rate limits in the background. |
+| `ANTHROPIC_API_KEY` | — | Anthropic API key for live rate-limit fetches. Not needed if you use Claude Code. |
+| `CLAUDE_USAGE_REFRESH_INTERVAL` | `60` | Dashboard auto-refresh interval in seconds. Live rate limits are fetched on every refresh. |
 
 **Example `~/.claude_usage.env`:**
 ```env
 ANTHROPIC_API_KEY=sk-ant-...
-CLAUDE_USAGE_REFRESH_INTERVAL=20
-CLAUDE_USAGE_LIMITS_REFRESH_INTERVAL=120
+CLAUDE_USAGE_REFRESH_INTERVAL=60
 ```
 
 ---
@@ -121,11 +119,10 @@ claude-usage --json     # output usage data as JSON and exit
 
 | Key | Action |
 |-----|--------|
-| `R` | Refresh data immediately |
-| `L` | Fetch live rate limits from Anthropic API |
+| `R` | Refresh data and fetch live rate limits immediately |
 | `Q` | Quit |
 
-The dashboard auto-refreshes every 30 seconds while open.
+The dashboard auto-refreshes every 60 seconds while open. Live rate limits (SESSION / WEEK) are fetched automatically on every refresh cycle.
 
 ### Non-interactive modes
 

@@ -18,7 +18,6 @@ class SummaryPanel(Static):
     weekly_limit: reactive[float | None] = reactive(None, recompose=True)
     plan_config: reactive[parser.PlanConfig | None] = reactive(None, recompose=True)
     rate_limits: reactive[parser.RateLimits | None] = reactive(None, recompose=True)
-    fetching: reactive[bool] = reactive(False, recompose=True)
 
     def compose(self) -> ComposeResult:
         plan = self.plan_config
@@ -38,10 +37,8 @@ class SummaryPanel(Static):
             yield Static(f"[bold]WEEK[/bold]  [dim]7-day window[/dim]")
             yield Static(f"  {_bar_pct(rl.weekly_pct, width=20)} {rl.weekly_pct:.1f}%")
             yield Static(f"  [dim]{_fmt_reset(rl.weekly_reset_at)}[/dim]")
-        elif self.fetching:
-            yield Static("[dim]Fetching limits...[/dim]")
         else:
-            yield Static("[dim]Press [bold]L[/bold] to fetch live limits[/dim]")
+            yield Static("[dim]Fetching live limits...[/dim]")
 
         yield Static("─" * 30)
 

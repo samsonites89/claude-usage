@@ -18,8 +18,7 @@ from claude_usage.components import DailyChart, RefreshPopup, SessionsTable, Sum
 from claude_usage.utils import _fmt, _fmt_cost
 
 
-REFRESH_INTERVAL = int(os.environ.get("CLAUDE_USAGE_REFRESH_INTERVAL", 30))
-LIMITS_REFRESH_INTERVAL = int(os.environ.get("CLAUDE_USAGE_LIMITS_REFRESH_INTERVAL", 300))
+REFRESH_INTERVAL = int(os.environ.get("CLAUDE_USAGE_REFRESH_INTERVAL", 60))
 
 
 class ClaudeUsageApp(App):
@@ -27,7 +26,6 @@ class ClaudeUsageApp(App):
     CSS_PATH = "styles/app.tcss"
     BINDINGS: ClassVar[list[Binding]] = [
         Binding("r", "refresh", "Refresh"),
-        Binding("l", "fetch_limits", "Fetch limits"),
         Binding("q", "quit", "Quit"),
     ]
 
@@ -46,8 +44,8 @@ class ClaudeUsageApp(App):
 
     def on_mount(self) -> None:
         self._load_data()
-        self.set_interval(REFRESH_INTERVAL, self._load_data)
-        self.set_interval(LIMITS_REFRESH_INTERVAL, self._auto_fetch_limits)
+        self._auto_fetch_limits()
+        self.set_interval(REFRESH_INTERVAL, self._refresh_all)
         cached = parser.load_rate_limits_cache()
         if cached:
             self.query_one(SummaryPanel).rate_limits = cached
@@ -110,8 +108,13 @@ class ClaudeUsageApp(App):
 
         return all_totals, daily_total
 
+    def _refresh_all(self) -> None:
+        self._load_data()
+        self._auto_fetch_limits()
+
     def action_refresh(self) -> None:
         all_totals, daily_total = self._load_data()
+        self._auto_fetch_limits()
         ts = datetime.now().strftime("%H:%M:%S")
         msg = (
             f"[bold]Refreshed[/bold]  [dim]{ts}[/dim]\n"
@@ -123,24 +126,10 @@ class ClaudeUsageApp(App):
     def _auto_fetch_limits(self) -> None:
         self.run_worker(self._do_auto_fetch_limits, exclusive=True)
 
-    def action_fetch_limits(self) -> None:
-        self.query_one(SummaryPanel).fetching = True
-        self.run_worker(self._do_fetch_limits, exclusive=True)
-
     async def _do_auto_fetch_limits(self) -> None:
         limits = await asyncio.get_event_loop().run_in_executor(None, parser.fetch_rate_limits)
         if limits:
             self.query_one(SummaryPanel).rate_limits = limits
-
-    async def _do_fetch_limits(self) -> None:
-        limits = await asyncio.get_event_loop().run_in_executor(None, parser.fetch_rate_limits)
-        panel = self.query_one(SummaryPanel)
-        panel.fetching = False
-        if limits:
-            panel.rate_limits = limits
-            await self.push_screen(RefreshPopup("[bold][green]Rate limits updated[/green][/bold]"))
-        else:
-            await self.push_screen(RefreshPopup("[bold][red]Failed to fetch rate limits[/red][/bold]", timeout=3.0))
 
     def action_quit(self) -> None:
         self.exit()
