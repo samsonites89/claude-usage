@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.0.1] - 2026-05-09
+
+### Chores
+- `run.py` now routes through `main()` so `python3 run.py --version` / `-V` works correctly
+
 ## [1.0.0] - 2026-05-09
 
 ### Features
