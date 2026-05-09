@@ -7,6 +7,7 @@ from typing import ClassVar
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.reactive import reactive
+from textual.screen import ModalScreen
 from textual.widgets import Footer, Header, Static
 from textual.containers import Horizontal, Vertical
 from textual.worker import Worker, WorkerState
@@ -243,6 +244,41 @@ class SessionsTable(Static):
         return "\n".join(lines)
 
 
+class RefreshPopup(ModalScreen):
+    DEFAULT_CSS = """
+    RefreshPopup {
+        align: center middle;
+        background: $background 0%;
+    }
+    RefreshPopup > Static {
+        width: auto;
+        height: auto;
+        padding: 2 6;
+        border: round $primary;
+        background: $surface;
+        text-align: center;
+    }
+    """
+
+    def __init__(self, message: str, timeout: float = 1.5) -> None:
+        super().__init__()
+        self._message = message
+        self._timeout = timeout
+
+    def compose(self) -> ComposeResult:
+        yield Static(self._message)
+
+    def on_mount(self) -> None:
+        self._timer = self.set_timer(self._timeout, self._close)
+
+    def _close(self) -> None:
+        self.dismiss()
+
+    def on_click(self) -> None:
+        self._timer.stop()
+        self.dismiss()
+
+
 class ClaudeUsageApp(App):
     TITLE = "Claude Token Usage"
     CSS = """
@@ -288,7 +324,7 @@ class ClaudeUsageApp(App):
         if cached:
             self.query_one(SummaryPanel).rate_limits = cached
 
-    def _load_data(self) -> None:
+    def _load_data(self) -> tuple[parser.Totals, parser.Totals]:
         records = parser.load_records()
         now = datetime.now(tz=timezone.utc)
         all_totals = parser.totals(records)
@@ -346,8 +382,17 @@ class ClaudeUsageApp(App):
         self.query_one(WeeklyChart).week_data = weekly
         self.query_one(SessionsTable).session_data = sorted_sessions
 
+        return all_totals, daily_total
+
     def action_refresh(self) -> None:
-        self._load_data()
+        all_totals, daily_total = self._load_data()
+        ts = datetime.now().strftime("%H:%M:%S")
+        msg = (
+            f"[bold]Refreshed[/bold]  [dim]{ts}[/dim]\n"
+            f"[dim]Today  {_fmt(daily_total.total_tokens)} tokens · {_fmt_cost(daily_total.estimated_cost)}[/dim]\n"
+            f"[dim]All time  {_fmt(all_totals.record_count)} requests · {_fmt_cost(all_totals.estimated_cost)}[/dim]"
+        )
+        self.push_screen(RefreshPopup(msg))
 
     def action_fetch_limits(self) -> None:
         panel = self.query_one(SummaryPanel)
@@ -361,6 +406,9 @@ class ClaudeUsageApp(App):
         panel.fetching = False
         if limits:
             panel.rate_limits = limits
+            await self.push_screen(RefreshPopup("[bold][green]Rate limits updated[/green][/bold]"))
+        else:
+            await self.push_screen(RefreshPopup("[bold][red]Failed to fetch rate limits[/red][/bold]", timeout=3.0))
 
     def action_quit(self) -> None:
         self.exit()
