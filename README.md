@@ -97,11 +97,13 @@ cp .env.example ~/.claude_usage.env
 |---|---|---|
 | `ANTHROPIC_API_KEY` | — | Anthropic API key for the live rate-limit fetch (press `L`). Not needed if you use Claude Code. |
 | `CLAUDE_USAGE_REFRESH_INTERVAL` | `30` | Dashboard auto-refresh interval in seconds. |
+| `CLAUDE_USAGE_LIMITS_REFRESH_INTERVAL` | `300` | How often (seconds) to silently re-fetch live SESSION/WEEK rate limits in the background. |
 
 **Example `~/.claude_usage.env`:**
 ```env
 ANTHROPIC_API_KEY=sk-ant-...
 CLAUDE_USAGE_REFRESH_INTERVAL=20
+CLAUDE_USAGE_LIMITS_REFRESH_INTERVAL=120
 ```
 
 ---
