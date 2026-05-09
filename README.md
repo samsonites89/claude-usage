@@ -111,6 +111,14 @@ CLAUDE_USAGE_LIMITS_REFRESH_INTERVAL=120
 
 ## Usage
 
+```bash
+claude-usage            # launch the interactive dashboard
+claude-usage --summary  # print a plain-text summary and exit
+claude-usage --json     # output usage data as JSON and exit
+```
+
+### Interactive dashboard keys
+
 | Key | Action |
 |-----|--------|
 | `R` | Refresh data immediately |
@@ -118,6 +126,15 @@ CLAUDE_USAGE_LIMITS_REFRESH_INTERVAL=120
 | `Q` | Quit |
 
 The dashboard auto-refreshes every 30 seconds while open.
+
+### Non-interactive modes
+
+`--summary` and `--json` print to stdout and exit immediately — no TUI is launched. Both include all-time totals, today, this week, cache token counts, and live rate-limit data (SESSION / WEEK) if a cached fetch is available.
+
+```bash
+# pipe JSON into jq
+claude-usage --json | jq '.all_time.estimated_cost'
+```
 
 ---
 

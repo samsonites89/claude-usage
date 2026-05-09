@@ -144,17 +144,117 @@ class ClaudeUsageApp(App):
         self.exit()
 
 
+def _print_summary(records: list[parser.UsageRecord]) -> None:
+    from claude_usage.utils import _fmt, _fmt_cost
+
+    all_t = parser.totals(records)
+    today_t = parser.today_totals(records)
+    week_t = parser.week_totals(records)
+
+    rl = parser.load_rate_limits_cache()
+    if rl:
+        from datetime import timedelta
+        now = datetime.now(tz=timezone.utc)
+        session_t = parser.window_totals(records, rl.session_reset_at - timedelta(hours=5), now)
+        week_window_t = parser.window_totals(records, rl.weekly_reset_at - timedelta(days=7), now)
+    else:
+        session_t = week_window_t = None
+
+    print("Claude Code Usage Summary")
+    print("=" * 40)
+    print(f"All time   {_fmt_cost(all_t.estimated_cost):>10}  {_fmt(all_t.record_count)} req  "
+          f"{_fmt(all_t.input_tokens)} in / {_fmt(all_t.output_tokens)} out tokens")
+    print(f"Today      {_fmt_cost(today_t.estimated_cost):>10}  {_fmt(today_t.record_count)} req  "
+          f"{_fmt(today_t.total_tokens)} tokens")
+    print(f"This week  {_fmt_cost(week_t.estimated_cost):>10}  {_fmt(week_t.record_count)} req  "
+          f"{_fmt(week_t.total_tokens)} tokens")
+    print(f"Cache      write {_fmt(all_t.cache_creation_tokens)} / read {_fmt(all_t.cache_read_tokens)} tokens")
+    if rl and session_t and week_window_t:
+        print(f"Session    {rl.session_pct:.1f}% of 5-hour window used  "
+              f"({_fmt_cost(session_t.estimated_cost)})")
+        print(f"Week       {rl.weekly_pct:.1f}% of 7-day window used  "
+              f"({_fmt_cost(week_window_t.estimated_cost)})")
+
+
+def _print_json(records: list[parser.UsageRecord]) -> None:
+    import json as _json
+
+    all_t = parser.totals(records)
+    today_t = parser.today_totals(records)
+    week_t = parser.week_totals(records)
+    sessions = parser.by_session(records)
+    last_seen = parser.session_last_seen(records)
+
+    rl = parser.load_rate_limits_cache()
+    if rl:
+        from datetime import timedelta
+        now = datetime.now(tz=timezone.utc)
+        session_t = parser.window_totals(records, rl.session_reset_at - timedelta(hours=5), now)
+        week_window_t = parser.window_totals(records, rl.weekly_reset_at - timedelta(days=7), now)
+    else:
+        session_t = week_window_t = None
+
+    def totals_dict(t: parser.Totals) -> dict:
+        return {
+            "estimated_cost": round(t.estimated_cost, 6),
+            "input_tokens": t.input_tokens,
+            "output_tokens": t.output_tokens,
+            "cache_creation_tokens": t.cache_creation_tokens,
+            "cache_read_tokens": t.cache_read_tokens,
+            "record_count": t.record_count,
+        }
+
+    sorted_sessions = sorted(
+        [(sid, t, last_seen[sid]) for sid, t in sessions.items()],
+        key=lambda x: x[2],
+        reverse=True,
+    )[:20]
+
+    out: dict = {
+        "all_time": totals_dict(all_t),
+        "today": totals_dict(today_t),
+        "this_week": totals_dict(week_t),
+        "sessions": [
+            {**totals_dict(t), "session_id": sid, "last_seen": ls.isoformat()}
+            for sid, t, ls in sorted_sessions
+        ],
+    }
+
+    if rl and session_t and week_window_t:
+        out["rate_limits"] = {
+            "session_pct": round(rl.session_pct, 2),
+            "session_cost": round(session_t.estimated_cost, 6),
+            "session_reset_at": rl.session_reset_at.isoformat(),
+            "weekly_pct": round(rl.weekly_pct, 2),
+            "weekly_cost": round(week_window_t.estimated_cost, 6),
+            "weekly_reset_at": rl.weekly_reset_at.isoformat(),
+            "fetched_at": rl.fetched_at.isoformat(),
+        }
+
+    print(_json.dumps(out, indent=2))
+
+
 def main() -> None:
     from claude_usage import __version__
 
     ap = argparse.ArgumentParser(prog="claude-usage", description="Terminal dashboard for Claude Code token usage")
     ap.add_argument("-V", "--version", action="version", version=f"claude-usage {__version__}")
-    ap.parse_args()
+    ap.add_argument("--summary", action="store_true", help="Print a plain-text usage summary and exit")
+    ap.add_argument("--json", action="store_true", help="Print usage data as JSON and exit")
+    args = ap.parse_args()
 
     if shutil.which("claude") is None:
         print("Error: the `claude` CLI is not installed or not in PATH.")
         print("claude-usage requires Claude Code to be installed.")
         print("See https://claude.ai/code to get started.")
         sys.exit(1)
+
+    if args.summary:
+        _print_summary(parser.load_records())
+        return
+
+    if args.json:
+        _print_json(parser.load_records())
+        return
 
     ClaudeUsageApp().run()

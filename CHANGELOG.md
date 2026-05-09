@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.3] - 2026-05-09
+
+### Features
+- `--summary` flag: print a plain-text usage summary (all-time, today, this week, cache, rate limits) and exit — no TUI required
+- `--json` flag: output the same data as machine-readable JSON and exit
+
 ## [1.0.2] - 2026-05-09
 
 ### Features
