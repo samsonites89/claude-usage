@@ -139,10 +139,20 @@ Costs are displayed as `~$X.XXXX (est.)` since different Claude models have diff
 claude-usage/
 ├── claude_usage/
 │   ├── __init__.py
-│   ├── parser.py      # reads and aggregates ~/.claude JSONL logs
-│   └── app.py         # Textual TUI layout
-├── run.py             # legacy entry point (still works)
-├── pyproject.toml     # package definition and claude-usage CLI entry point
+│   ├── parser.py          # reads and aggregates ~/.claude JSONL logs
+│   ├── utils.py           # shared formatting helpers (_fmt, _bar, etc.)
+│   ├── app.py             # ClaudeUsageApp entry point and data loading
+│   ├── components/        # Textual widgets, one file each
+│   │   ├── __init__.py
+│   │   ├── summary_panel.py
+│   │   ├── daily_chart.py
+│   │   ├── weekly_chart.py
+│   │   ├── sessions_table.py
+│   │   └── refresh_popup.py
+│   └── styles/
+│       └── app.tcss       # all Textual CSS
+├── run.py                 # legacy entry point (still works)
+├── pyproject.toml         # package definition and claude-usage CLI entry point
 ├── requirements.txt
 └── README.md
 ```
