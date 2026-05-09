@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.1.0] - 2026-05-09
+## [1.0.2] - 2026-05-09
 
 ### Features
 - Gate startup on `claude` CLI presence — exits with a clear error message if `claude` is not found in `PATH`
