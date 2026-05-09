@@ -7,6 +7,7 @@ from typing import ClassVar
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.reactive import reactive
+from textual.screen import ModalScreen
 from textual.widgets import Footer, Header, Static
 from textual.containers import Horizontal, Vertical
 from textual.worker import Worker, WorkerState
@@ -243,6 +244,36 @@ class SessionsTable(Static):
         return "\n".join(lines)
 
 
+class RefreshPopup(ModalScreen):
+    DEFAULT_CSS = """
+    RefreshPopup {
+        align: center middle;
+    }
+    RefreshPopup > Static {
+        width: auto;
+        height: auto;
+        padding: 2 6;
+        border: round $primary;
+        background: $surface;
+        text-align: center;
+    }
+    """
+
+    def __init__(self, message: str, timeout: float = 1.5) -> None:
+        super().__init__()
+        self._message = message
+        self._timeout = timeout
+
+    def compose(self) -> ComposeResult:
+        yield Static(self._message)
+
+    def on_mount(self) -> None:
+        self.set_timer(self._timeout, self.dismiss)
+
+    def on_click(self) -> None:
+        self.dismiss()
+
+
 class ClaudeUsageApp(App):
     TITLE = "Claude Token Usage"
     CSS = """
@@ -348,10 +379,12 @@ class ClaudeUsageApp(App):
 
     def action_refresh(self) -> None:
         self._load_data()
+        self.push_screen(RefreshPopup("[bold]Refreshed[/bold]"))
 
     def action_fetch_limits(self) -> None:
         panel = self.query_one(SummaryPanel)
         panel.fetching = True
+        self.push_screen(RefreshPopup("[bold]Fetching live rate limits…[/bold]", timeout=2.0))
         self.run_worker(self._do_fetch_limits, exclusive=True)
 
     async def _do_fetch_limits(self) -> None:
@@ -361,6 +394,9 @@ class ClaudeUsageApp(App):
         panel.fetching = False
         if limits:
             panel.rate_limits = limits
+            self.push_screen(RefreshPopup("[bold][green]Rate limits updated[/green][/bold]"))
+        else:
+            self.push_screen(RefreshPopup("[bold][red]Failed to fetch rate limits[/red][/bold]", timeout=3.0))
 
     def action_quit(self) -> None:
         self.exit()
