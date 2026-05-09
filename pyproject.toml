@@ -16,6 +16,12 @@ dependencies = [
 [project.scripts]
 claude-usage = "claude_usage.app:main"
 
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["claude_usage*"]
