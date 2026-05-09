@@ -17,6 +17,7 @@ from claude_usage.utils import _fmt, _fmt_cost
 
 
 REFRESH_INTERVAL = int(os.environ.get("CLAUDE_USAGE_REFRESH_INTERVAL", 30))
+LIMITS_REFRESH_INTERVAL = int(os.environ.get("CLAUDE_USAGE_LIMITS_REFRESH_INTERVAL", 300))
 
 
 class ClaudeUsageApp(App):
@@ -42,6 +43,7 @@ class ClaudeUsageApp(App):
     def on_mount(self) -> None:
         self._load_data()
         self.set_interval(REFRESH_INTERVAL, self._load_data)
+        self.set_interval(LIMITS_REFRESH_INTERVAL, self._auto_fetch_limits)
         cached = parser.load_rate_limits_cache()
         if cached:
             self.query_one(SummaryPanel).rate_limits = cached
@@ -95,6 +97,8 @@ class ClaudeUsageApp(App):
         panel.daily_limit = daily_limit_cost
         panel.weekly_limit = weekly_limit_cost
         panel.plan_config = plan_config
+        if rl:
+            panel.rate_limits = rl
 
         self.query_one(DailyChart).day_data = daily
         self.query_one(WeeklyChart).week_data = weekly
@@ -112,9 +116,17 @@ class ClaudeUsageApp(App):
         )
         self.push_screen(RefreshPopup(msg))
 
+    def _auto_fetch_limits(self) -> None:
+        self.run_worker(self._do_auto_fetch_limits, exclusive=True)
+
     def action_fetch_limits(self) -> None:
         self.query_one(SummaryPanel).fetching = True
         self.run_worker(self._do_fetch_limits, exclusive=True)
+
+    async def _do_auto_fetch_limits(self) -> None:
+        limits = await asyncio.get_event_loop().run_in_executor(None, parser.fetch_rate_limits)
+        if limits:
+            self.query_one(SummaryPanel).rate_limits = limits
 
     async def _do_fetch_limits(self) -> None:
         limits = await asyncio.get_event_loop().run_in_executor(None, parser.fetch_rate_limits)
