@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.0.5] - 2026-05-09
+
+### Features
+- `--plan {pro,max_5x,max_20x}`: override the plan for budget calculations without editing the config file; affects the dashboard bars, `--summary`, and `--json` output
+
 ## [1.0.4] - 2026-05-09
 
 ### Fixes
@@ -24,7 +29,7 @@
 ## [1.0.0] - 2026-05-09
 
 ### Features
-- `--version` / `-V` flag prints program name and version
+- `--version` / `-V` flag prints program name and exit — no TUI required
 - Centered modal popup on `r` and `l` with auto-dismiss; shows timestamp, today's token count/cost, and all-time request count on refresh; shows success/error on rate-limit fetch
 - Daily and weekly usage bar charts (last 14 days / last 8 weeks)
 - Recent sessions table sorted by last activity (last 20)
