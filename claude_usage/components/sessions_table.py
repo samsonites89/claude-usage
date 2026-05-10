@@ -12,9 +12,9 @@ class SessionsTable(Static):
     def render(self) -> str:
         rows = self.session_data
         if not rows:
-            return "[bold dark_orange]▶[/bold dark_orange] [bold]RECENT SESSIONS[/bold]\n\n[dim]No sessions found.[/dim]"
+            return "[bold darkorange]▶[/bold darkorange] [bold]RECENT SESSIONS[/bold]\n\n[dim]No sessions found.[/dim]"
 
-        lines = ["[bold dark_orange]▶[/bold dark_orange] [bold]RECENT SESSIONS[/bold] (last 20)", ""]
+        lines = ["[bold darkorange]▶[/bold darkorange] [bold]RECENT SESSIONS[/bold] (last 20)", ""]
         col_id = 18
         col_tok = 10
         col_cost = 10
