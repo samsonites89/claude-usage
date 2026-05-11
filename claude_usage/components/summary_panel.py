@@ -24,7 +24,7 @@ class SummaryPanel(Static):
         rl = self.rate_limits
 
         plan_label = f"[dim]{plan.label}[/dim]" if plan else "[dim]Pro[/dim]"
-        yield Static(f"[bold dark_orange]▶[/bold dark_orange] [bold]USAGE[/bold]  {plan_label}")
+        yield Static(f"[bold darkorange]▶[/bold darkorange] [bold]USAGE[/bold]  {plan_label}")
         yield Static("─" * 30)
 
         if rl:

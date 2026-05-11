@@ -25,3 +25,6 @@ testpaths = ["tests"]
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["claude_usage*"]
+
+[tool.setuptools.package-data]
+claude_usage = ["styles/*.tcss"]

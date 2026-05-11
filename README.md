@@ -44,6 +44,9 @@ pipx install .
 
 # 3. Run from anywhere
 claude-usage
+
+# To upgrade an existing installation after pulling updates:
+# git pull && pipx install --force .
 ```
 
 ### Ubuntu / Debian
@@ -69,6 +72,9 @@ pipx install .
 
 # 5. Run from anywhere
 claude-usage
+
+# To upgrade an existing installation after pulling updates:
+# git pull && pipx install --force .
 ```
 
 ---

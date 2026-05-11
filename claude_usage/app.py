@@ -21,23 +21,21 @@ from claude_usage.utils import _fmt, _fmt_cost
 REFRESH_INTERVAL = int(os.environ.get("CLAUDE_USAGE_REFRESH_INTERVAL", 60))
 
 _CLAWD_ART = (
-    "[bold dark_orange] ▐▛███▜▌ [/bold dark_orange]\n"
-    "[bold dark_orange]▝▜█████▛▘[/bold dark_orange]\n"
-    "[dark_orange]  ▘▘ ▝▝  [/dark_orange]\n"
-    "[bold dark_orange]  clawd  [/bold dark_orange]\n"
+    "[bold darkorange] ▐▛███▜▌ [/bold darkorange]\n"
+    "[bold darkorange]▝▜█████▛▘[/bold darkorange]\n"
+    "[darkorange]  ▘▘ ▝▝  [/darkorange]\n"
     "[dim]· claude code · token usage ·[/dim]"
 )
 
 
 class ClawdBanner(Static):
-    def render(self) -> str:
-        return _CLAWD_ART
+    def __init__(self) -> None:
+        super().__init__(_CLAWD_ART)
 
 
 class FooterBar(Static):
-    def render(self) -> str:
-        return (
-            "[dark_orange]▛█▜[/dark_orange]  "
+    def __init__(self) -> None:
+        super().__init__(
             "[dim]github.com/samsonites89  ·  made with clawd[/dim]"
         )
 
