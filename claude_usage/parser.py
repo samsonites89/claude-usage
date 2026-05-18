@@ -92,13 +92,17 @@ def load_rate_limits_cache() -> RateLimits | None:
         return None
     try:
         obj = json.loads(LIMITS_CACHE_FILE.read_text())
-        return RateLimits(
+        rl = RateLimits(
             session_utilization=obj["session_utilization"],
             session_reset_at=datetime.fromisoformat(obj["session_reset_at"]),
             weekly_utilization=obj["weekly_utilization"],
             weekly_reset_at=datetime.fromisoformat(obj["weekly_reset_at"]),
             fetched_at=datetime.fromisoformat(obj["fetched_at"]),
         )
+        # Discard stale cache so the caller shows "Fetching..." instead of "reset past"
+        if rl.session_reset_at <= datetime.now(tz=timezone.utc):
+            return None
+        return rl
     except (KeyError, ValueError, OSError, json.JSONDecodeError):
         return None
 

@@ -67,9 +67,6 @@ class ClaudeUsageApp(App):
         self._load_data()
         self._auto_fetch_limits()
         self.set_interval(REFRESH_INTERVAL, self._refresh_all)
-        cached = parser.load_rate_limits_cache()
-        if cached:
-            self.query_one(SummaryPanel).rate_limits = cached
 
     def _load_data(self) -> tuple[parser.Totals, parser.Totals]:
         records = parser.load_records()
