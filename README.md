@@ -2,7 +2,7 @@
 
 A terminal dashboard for visualizing your [Claude Code](https://claude.ai/code) CLI token usage.
 
-Reads directly from `~/.claude/projects/` — no extra configuration needed.
+Reads directly from `~/.claude/projects/`. Live rate-limit data is fetched automatically using your Claude Code session — no extra configuration needed on macOS.
 
 ![dashboard layout: summary panel on the left, daily bar chart and sessions table on the right]
 
@@ -23,6 +23,18 @@ Reads directly from `~/.claude/projects/` — no extra configuration needed.
 - Python 3.10+
 - [Claude Code](https://claude.ai/code) CLI installed and available in `PATH` (`claude` command must be found) — `claude-usage` will exit with an error if it is not present
 - Claude Code used at least once so that usage data exists in `~/.claude/`
+
+### Live rate-limit data (SESSION / WEEK bars)
+
+The USAGE panel shows live 5-hour and 7-day rate-limit utilisation. This requires credentials to make an Anthropic API call. The app resolves credentials automatically in this order:
+
+| Source | Platform | Notes |
+|--------|----------|-------|
+| `~/.claude/.credentials.json` | Linux / older Claude Code | Written by Claude Code at sign-in |
+| macOS Keychain (`Claude Code-credentials`) | macOS | Used by Claude Code desktop/CLI on Mac |
+| `ANTHROPIC_API_KEY` env var | All | Set in `~/.claude_usage.env` as fallback |
+
+If no credentials are found, the USAGE panel shows a prompt to run `claude` (which signs in and stores credentials) or set `ANTHROPIC_API_KEY`.
 
 ---
 
@@ -102,7 +114,7 @@ cp .env.example ~/.claude_usage.env
 
 | Variable | Default | Description |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | — | Anthropic API key for live rate-limit fetches. Not needed if you use Claude Code. |
+| `ANTHROPIC_API_KEY` | — | Fallback API key for live rate-limit fetches. Not needed on macOS (Keychain is used automatically). |
 | `CLAUDE_USAGE_REFRESH_INTERVAL` | `60` | Dashboard auto-refresh interval in seconds. Live rate limits are fetched on every refresh. |
 
 **Example `~/.claude_usage.env`:**
