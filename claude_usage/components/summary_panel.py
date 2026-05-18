@@ -20,6 +20,9 @@ class SummaryPanel(Static):
     rate_limits: reactive[parser.RateLimits | None] = reactive(None, recompose=True)
     auth_error: reactive[bool] = reactive(False, recompose=True)
 
+    def on_mount(self) -> None:
+        self.set_interval(60, lambda: self.refresh(recompose=True))
+
     def compose(self) -> ComposeResult:
         plan = self.plan_config
         rl = self.rate_limits

@@ -124,6 +124,8 @@ class ClaudeUsageApp(App):
         self.query_one(WeeklyChart).week_data = weekly
         self.query_one(SessionsTable).session_data = sorted_sessions
 
+        panel.refresh(recompose=True)
+
         return all_totals, daily_total
 
     def _refresh_all(self) -> None:
