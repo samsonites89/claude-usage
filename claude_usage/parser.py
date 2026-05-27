@@ -92,19 +92,24 @@ def load_rate_limits_cache() -> RateLimits | None:
         return None
     try:
         obj = json.loads(LIMITS_CACHE_FILE.read_text())
-        return RateLimits(
+        rl = RateLimits(
             session_utilization=obj["session_utilization"],
             session_reset_at=datetime.fromisoformat(obj["session_reset_at"]),
             weekly_utilization=obj["weekly_utilization"],
             weekly_reset_at=datetime.fromisoformat(obj["weekly_reset_at"]),
             fetched_at=datetime.fromisoformat(obj["fetched_at"]),
         )
+        # Discard stale cache so the caller shows "Fetching..." instead of "reset past"
+        if rl.session_reset_at <= datetime.now(tz=timezone.utc):
+            return None
+        return rl
     except (KeyError, ValueError, OSError, json.JSONDecodeError):
         return None
 
 
 def _get_auth_headers() -> dict[str, str] | None:
-    """Returns auth headers, preferring Claude Code OAuth then ANTHROPIC_API_KEY."""
+    """Returns auth headers: credentials file → macOS Keychain → ANTHROPIC_API_KEY."""
+    # 1. File-based credentials (Linux / older Claude Code installs)
     try:
         creds = json.loads(CREDENTIALS_FILE.read_text())
         token = creds["claudeAiOauth"]["accessToken"]
@@ -112,11 +117,30 @@ def _get_auth_headers() -> dict[str, str] | None:
     except (OSError, KeyError, json.JSONDecodeError):
         pass
 
+    # 2. macOS Keychain (Claude Code desktop/CLI on macOS stores OAuth here)
+    try:
+        import subprocess as _sp
+        result = _sp.run(
+            ["security", "find-generic-password", "-s", "Claude Code-credentials", "-w"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if result.returncode == 0:
+            creds = json.loads(result.stdout.strip())
+            token = creds["claudeAiOauth"]["accessToken"]
+            return {"Authorization": f"Bearer {token}"}
+    except Exception:
+        pass
+
+    # 3. Explicit API key
     api_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
     if api_key:
         return {"x-api-key": api_key}
 
     return None
+
+
+def has_credentials() -> bool:
+    return _get_auth_headers() is not None
 
 
 def fetch_rate_limits() -> RateLimits | None:

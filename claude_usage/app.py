@@ -67,9 +67,6 @@ class ClaudeUsageApp(App):
         self._load_data()
         self._auto_fetch_limits()
         self.set_interval(REFRESH_INTERVAL, self._refresh_all)
-        cached = parser.load_rate_limits_cache()
-        if cached:
-            self.query_one(SummaryPanel).rate_limits = cached
 
     def _load_data(self) -> tuple[parser.Totals, parser.Totals]:
         records = parser.load_records()
@@ -127,6 +124,8 @@ class ClaudeUsageApp(App):
         self.query_one(WeeklyChart).week_data = weekly
         self.query_one(SessionsTable).session_data = sorted_sessions
 
+        panel.refresh(recompose=True)
+
         return all_totals, daily_total
 
     def _refresh_all(self) -> None:
@@ -149,8 +148,12 @@ class ClaudeUsageApp(App):
 
     async def _do_auto_fetch_limits(self) -> None:
         limits = await asyncio.get_event_loop().run_in_executor(None, parser.fetch_rate_limits)
+        panel = self.query_one(SummaryPanel)
         if limits:
-            self.query_one(SummaryPanel).rate_limits = limits
+            panel.rate_limits = limits
+            panel.auth_error = False
+        elif not await asyncio.get_event_loop().run_in_executor(None, parser.has_credentials):
+            panel.auth_error = True
 
     def action_quit(self) -> None:
         self.exit()
