@@ -58,7 +58,11 @@ jobs:
 
       - name: Create and push tag
         if: steps.tag_check.outputs.exists == 'false'
+        env:
+          TAG_NOTES: ${{ steps.changelog.outputs.notes }}
         run: |
-          git tag -a "${{ steps.version.outputs.version }}" \
-            -m "${{ steps.changelog.outputs.notes }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          printf '%s' "$TAG_NOTES" > /tmp/tag_message.txt
+          git tag -a "${{ steps.version.outputs.version }}" -F /tmp/tag_message.txt
           git push origin "${{ steps.version.outputs.version }}"
