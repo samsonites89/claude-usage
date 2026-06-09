@@ -1,0 +1,111 @@
+name: Update changelog on version bump
+
+on:
+  push:
+    branches:
+      - develop
+    paths:
+      - pyproject.toml
+
+permissions:
+  contents: write
+
+jobs:
+  update-changelog:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Detect version bump
+        id: version
+        run: |
+          CURRENT=$(python3 - <<'EOF'
+          import tomllib
+          with open("pyproject.toml", "rb") as f:
+              print(tomllib.load(f)["project"]["version"])
+          EOF
+          )
+
+          git show HEAD~1:pyproject.toml > /tmp/prev_pyproject.toml 2>/dev/null || true
+          PREVIOUS=$(python3 - <<'EOF'
+          import tomllib, pathlib, sys
+          p = pathlib.Path("/tmp/prev_pyproject.toml")
+          if not p.exists() or not p.stat().st_size:
+              print("")
+              sys.exit(0)
+          try:
+              with open(p, "rb") as f:
+                  print(tomllib.load(f)["project"]["version"])
+          except Exception:
+              print("")
+          EOF
+          )
+
+          echo "current=$CURRENT" >> "$GITHUB_OUTPUT"
+          if [ -n "$CURRENT" ] && [ "$CURRENT" != "$PREVIOUS" ]; then
+            echo "bumped=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "bumped=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check if changelog entry already exists
+        if: steps.version.outputs.bumped == 'true'
+        id: changelog_check
+        run: |
+          VERSION="${{ steps.version.outputs.current }}"
+          if grep -qF "## [$VERSION]" CHANGELOG.md; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Collect commits since last tag
+        if: steps.version.outputs.bumped == 'true' && steps.changelog_check.outputs.exists == 'false'
+        run: |
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -n "$LAST_TAG" ]; then
+            git log "$LAST_TAG"..HEAD --pretty=format:"- %s" --no-merges > /tmp/commits.txt
+          else
+            git log --pretty=format:"- %s" --no-merges | head -30 > /tmp/commits.txt
+          fi
+
+      - name: Prepend changelog entry
+        if: steps.version.outputs.bumped == 'true' && steps.changelog_check.outputs.exists == 'false'
+        run: |
+          python3 - "${{ steps.version.outputs.current }}" "$(date +%Y-%m-%d)" <<'PYEOF'
+          import sys, pathlib
+
+          version, date = sys.argv[1], sys.argv[2]
+          commits = pathlib.Path("/tmp/commits.txt").read_text().strip()
+          if not commits:
+              commits = "- (no commit messages found)"
+
+          new_entry = f"## [{version}] - {date}\n\n### Changes\n{commits}\n"
+
+          path = pathlib.Path("CHANGELOG.md")
+          content = path.read_text()
+          lines = content.split("\n")
+
+          # Insert after the "# Changelog" header line (and its trailing blank line)
+          insert_at = 1
+          for i, line in enumerate(lines):
+              if line.startswith("# "):
+                  insert_at = i + 2
+                  break
+
+          lines.insert(insert_at, new_entry)
+          path.write_text("\n".join(lines))
+          PYEOF
+
+      - name: Commit updated changelog
+        if: steps.version.outputs.bumped == 'true' && steps.changelog_check.outputs.exists == 'false'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git commit -m "chore: update CHANGELOG.md for v${{ steps.version.outputs.current }}"
+          git push
