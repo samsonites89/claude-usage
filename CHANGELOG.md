@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.2] - 2026-06-10
+
+### Fixes
+- Merged tag creation and binary release into a single workflow to bypass `GITHUB_TOKEN` limitation (tags pushed by `GITHUB_TOKEN` cannot trigger other workflows)
+- Fixed shell injection in annotated tag message by passing changelog content via env var and `git tag -F`
+- Fixed missing git identity when creating annotated tags in CI
+
 ## [1.2.1] - 2026-06-10
 
 ### Chores
