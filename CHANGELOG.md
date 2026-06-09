@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.1] - 2026-06-10
+
+### Chores
+- Added `CLAUDE.md` codebase guide for onboarding Claude before implementation work
+- Added GitHub Actions release workflow: builds standalone `clawd` binaries (linux-x86_64, macos-arm64, macos-x86_64) on `v*` tag push
+- Added GitHub Actions tag workflow: auto-creates an annotated tag with the matching CHANGELOG entry on every push to `main`
+- Added GitHub Actions changelog workflow: auto-prepends a CHANGELOG entry from `git log` when a version bump is pushed to `develop` without a matching entry
+
 ## [1.2.0] - 2026-06-10
 
 ### Features
