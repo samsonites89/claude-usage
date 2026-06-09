@@ -183,6 +183,17 @@ def fetch_rate_limits() -> RateLimits | None:
         return None
 
     now = datetime.now(tz=timezone.utc)
+
+    # If the window already rolled over, advance by the window period until the reset is
+    # in the future. Each elapsed period means a fresh window (utilization back to 0).
+    if s_reset <= now:
+        s_util = 0.0
+        while s_reset <= now:
+            s_reset += timedelta(hours=5)
+    if w_reset <= now:
+        w_util = 0.0
+        while w_reset <= now:
+            w_reset += timedelta(days=7)
     limits = RateLimits(
         session_utilization=s_util,
         session_reset_at=s_reset,

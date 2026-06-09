@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timedelta, timezone
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -329,3 +330,92 @@ class TestRateLimits:
     def test_weekly_pct(self):
         rl = self._make_rl(weekly_util=0.75)
         assert rl.weekly_pct == 75.0
+
+
+# ---------------------------------------------------------------------------
+# fetch_rate_limits — window advancement
+# ---------------------------------------------------------------------------
+
+def _fake_urlopen(session_reset_ts: int, weekly_reset_ts: int, session_util: float = 0.5, weekly_util: float = 0.3):
+    """Return a mock context-manager that urlopen() can be patched with."""
+    resp = MagicMock()
+    resp.headers.items.return_value = [
+        ("anthropic-ratelimit-unified-5h-utilization", str(session_util)),
+        ("anthropic-ratelimit-unified-5h-reset", str(session_reset_ts)),
+        ("anthropic-ratelimit-unified-7d-utilization", str(weekly_util)),
+        ("anthropic-ratelimit-unified-7d-reset", str(weekly_reset_ts)),
+    ]
+    cm = MagicMock()
+    cm.__enter__ = MagicMock(return_value=resp)
+    cm.__exit__ = MagicMock(return_value=False)
+    return cm
+
+
+class TestFetchRateLimitsWindowAdvancement:
+    def _patch(self, session_reset_ts: int, weekly_reset_ts: int, **kwargs):
+        return patch(
+            "urllib.request.urlopen",
+            return_value=_fake_urlopen(session_reset_ts, weekly_reset_ts, **kwargs),
+        )
+
+    def _past_ts(self, hours: float) -> int:
+        return int((datetime.now(tz=timezone.utc) - timedelta(hours=hours)).timestamp())
+
+    def _future_ts(self, hours: float) -> int:
+        return int((datetime.now(tz=timezone.utc) + timedelta(hours=hours)).timestamp())
+
+    def test_future_reset_preserved(self):
+        s_ts = self._future_ts(3)
+        w_ts = self._future_ts(24 * 5)
+        with patch("claude_usage.parser._get_auth_headers", return_value={"x-api-key": "test"}):
+            with self._patch(s_ts, w_ts, session_util=0.4, weekly_util=0.2):
+                rl = parser.fetch_rate_limits()
+        assert rl is not None
+        assert rl.session_reset_at > datetime.now(tz=timezone.utc)
+        assert rl.session_utilization == pytest.approx(0.4)
+
+    def test_past_session_reset_advances_to_future(self):
+        s_ts = self._past_ts(1)
+        w_ts = self._future_ts(24 * 5)
+        with patch("claude_usage.parser._get_auth_headers", return_value={"x-api-key": "test"}):
+            with self._patch(s_ts, w_ts, session_util=0.9):
+                rl = parser.fetch_rate_limits()
+        assert rl is not None
+        assert rl.session_reset_at > datetime.now(tz=timezone.utc)
+        assert rl.session_utilization == 0.0
+
+    def test_past_session_reset_many_windows_ago(self):
+        # 16 hours ago — three 5h windows have elapsed
+        s_ts = self._past_ts(16)
+        w_ts = self._future_ts(24 * 5)
+        with patch("claude_usage.parser._get_auth_headers", return_value={"x-api-key": "test"}):
+            with self._patch(s_ts, w_ts, session_util=0.8):
+                rl = parser.fetch_rate_limits()
+        assert rl is not None
+        assert rl.session_reset_at > datetime.now(tz=timezone.utc)
+        assert rl.session_utilization == 0.0
+
+    def test_past_session_reset_lands_within_one_window(self):
+        # After advancement the reset should be at most one window duration ahead
+        s_ts = self._past_ts(16)
+        w_ts = self._future_ts(24 * 5)
+        with patch("claude_usage.parser._get_auth_headers", return_value={"x-api-key": "test"}):
+            with self._patch(s_ts, w_ts):
+                rl = parser.fetch_rate_limits()
+        assert rl is not None
+        now = datetime.now(tz=timezone.utc)
+        assert rl.session_reset_at <= now + timedelta(hours=5)
+
+    def test_past_weekly_reset_advances_to_future(self):
+        s_ts = self._future_ts(3)
+        w_ts = self._past_ts(24 * 8)  # 8 days ago — one 7d window elapsed
+        with patch("claude_usage.parser._get_auth_headers", return_value={"x-api-key": "test"}):
+            with self._patch(s_ts, w_ts, weekly_util=0.6):
+                rl = parser.fetch_rate_limits()
+        assert rl is not None
+        assert rl.weekly_reset_at > datetime.now(tz=timezone.utc)
+        assert rl.weekly_utilization == 0.0
+
+    def test_no_credentials_returns_none(self):
+        with patch("claude_usage.parser._get_auth_headers", return_value=None):
+            assert parser.fetch_rate_limits() is None
