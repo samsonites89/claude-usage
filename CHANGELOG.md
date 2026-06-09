@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.3] - 2026-06-10
+
+### Chores
+- Updated GitHub Actions to Node.js 24-compatible major versions: `actions/checkout` v4→v5, `actions/setup-python` v5→v6, `actions/upload-artifact` v4→v6, `actions/download-artifact` v4→v6
+
 ## [1.2.2] - 2026-06-10
 
 ### Fixes
