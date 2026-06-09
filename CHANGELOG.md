@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.2.0] - 2026-06-10
+
+### Features
+- Per-workspace cost breakdown panel (WORKSPACES) showing estimated cost, total tokens, and a proportional cost bar for every project directory found in `~/.claude/projects/`, sorted by cost
+- Workspace path decoding now walks the real filesystem to correctly distinguish hyphens from slashes and underscores (e.g. `claude-usage` is no longer misread as `claude/usage`)
+
+### Docs
+- README: added Dashboard components section describing each panel
+- README: added Raw data sources section with a sample JSONL record, consumed fields table, and rate-limit response headers reference
+
 ## [1.1.0] - 2026-05-09
 
 ### Features
