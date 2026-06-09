@@ -15,6 +15,52 @@ from dotenv import load_dotenv
 load_dotenv(Path.home() / ".claude_usage.env")
 
 CLAUDE_DIR = Path.home() / ".claude" / "projects"
+
+
+import re as _re
+
+
+def _normalize_path_component(name: str) -> str:
+    """Return the Claude-encoded form of a filesystem name (non-alnum → '-')."""
+    return _re.sub(r"[^a-zA-Z0-9]", "-", name)
+
+
+def _decode_workspace(encoded_dir: str) -> str:
+    """Reconstruct the original filesystem path from a Claude-encoded directory name.
+
+    Claude encodes project paths by replacing every non-alphanumeric character
+    (/, -, _, spaces, …) with '-', so '/home/user/my-project' and
+    '/home/user/my_project' both become '-home-user-my-project'.
+
+    We resolve the ambiguity by walking the real filesystem: at each directory
+    level we list actual child entries, encode each one, and check how many
+    tokens it consumes.
+    """
+    stripped = encoded_dir.lstrip("-")
+    tokens = stripped.split("-")
+
+    def _walk(tokens: list[str], current: Path) -> str | None:
+        if not tokens:
+            return str(current)
+        try:
+            children = [c for c in current.iterdir() if c.is_dir()]
+        except OSError:
+            return None
+        for child in children:
+            norm = _normalize_path_component(child.name)
+            norm_parts = norm.split("-")
+            n = len(norm_parts)
+            if tokens[:n] == norm_parts:
+                result = _walk(tokens[n:], child)
+                if result is not None:
+                    return result
+        return None
+
+    resolved = _walk(tokens, Path("/"))
+    if resolved:
+        return resolved.lstrip("/")
+    # Fallback: naive replace (original behaviour)
+    return stripped.replace("-", "/")
 CONFIG_FILE = Path.home() / ".claude_usage_config.json"
 CREDENTIALS_FILE = Path.home() / ".claude" / ".credentials.json"
 LIMITS_CACHE_FILE = Path.home() / ".claude_usage_limits_cache.json"
@@ -308,7 +354,7 @@ def load_records() -> list[UsageRecord]:
 
     for jsonl_file in CLAUDE_DIR.rglob("*.jsonl"):
         parts = jsonl_file.relative_to(CLAUDE_DIR).parts
-        workspace = parts[0].replace("-", "/").lstrip("/") if parts else "unknown"
+        workspace = _decode_workspace(parts[0]) if parts else "unknown"
 
         try:
             text = jsonl_file.read_text(encoding="utf-8", errors="replace")
@@ -384,6 +430,13 @@ def by_session(records: list[UsageRecord]) -> dict[str, Totals]:
     for r in records:
         result[r.session_id].add(r)
     return result
+
+
+def by_workspace(records: list[UsageRecord]) -> dict[str, Totals]:
+    result: dict[str, Totals] = defaultdict(Totals)
+    for r in records:
+        result[r.workspace].add(r)
+    return dict(sorted(result.items(), key=lambda kv: kv[1].estimated_cost, reverse=True))
 
 
 def session_last_seen(records: list[UsageRecord]) -> dict[str, datetime]:

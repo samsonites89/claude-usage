@@ -14,7 +14,7 @@ from textual.containers import Horizontal, Vertical
 from textual.widgets import Footer, Header, Static
 
 from claude_usage import parser
-from claude_usage.components import DailyChart, RefreshPopup, SessionsTable, SummaryPanel, WeeklyChart
+from claude_usage.components import DailyChart, RefreshPopup, SessionsTable, SummaryPanel, WeeklyChart, WorkspaceTable
 from claude_usage.utils import _fmt, _fmt_cost
 
 
@@ -59,7 +59,9 @@ class ClaudeUsageApp(App):
                 with Horizontal(id="charts"):
                     yield DailyChart()
                     yield WeeklyChart()
-                yield SessionsTable()
+                with Horizontal(id="bottom"):
+                    yield WorkspaceTable()
+                    yield SessionsTable()
         yield FooterBar()
         yield Footer()
 
@@ -76,6 +78,7 @@ class ClaudeUsageApp(App):
         weekly = parser.by_week(records)
         sessions = parser.by_session(records)
         last_seen = parser.session_last_seen(records)
+        workspaces = list(parser.by_workspace(records).items())
         plan_config = self.plan_override or parser.load_plan_config()
         rl = parser.load_rate_limits_cache()
 
@@ -122,6 +125,7 @@ class ClaudeUsageApp(App):
 
         self.query_one(DailyChart).day_data = daily
         self.query_one(WeeklyChart).week_data = weekly
+        self.query_one(WorkspaceTable).workspace_data = workspaces
         self.query_one(SessionsTable).session_data = sorted_sessions
 
         panel.refresh(recompose=True)

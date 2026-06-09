@@ -65,10 +65,28 @@ WeeklyChart {
     overflow-y: auto;
 }
 
+/* ── Bottom row ────────────────────────────────────────────────── */
+
+#bottom {
+    layout: horizontal;
+    height: 1fr;
+}
+
+/* ── WorkspaceTable ────────────────────────────────────────────── */
+
+WorkspaceTable {
+    width: 1fr;
+    height: 100%;
+    border: solid $primary;
+    padding: 1 2;
+    overflow-y: auto;
+}
+
 /* ── SessionsTable ─────────────────────────────────────────────── */
 
 SessionsTable {
-    height: 1fr;
+    width: 1fr;
+    height: 100%;
     border: solid $primary;
     padding: 1 2;
     overflow-y: auto;
