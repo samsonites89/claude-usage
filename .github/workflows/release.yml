@@ -84,8 +84,6 @@ jobs:
             artifact_name: clawd-linux-x86_64
           - os: macos-latest
             artifact_name: clawd-macos-arm64
-          - os: macos-13
-            artifact_name: clawd-macos-x86_64
 
     steps:
       - uses: actions/checkout@v5
@@ -137,4 +135,3 @@ jobs:
           files: |
             dist/clawd-linux-x86_64
             dist/clawd-macos-arm64
-            dist/clawd-macos-x86_64

@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.4] - 2026-06-10
+
+### Fixes
+- Removed macOS x86_64 (`macos-13`) build target from the release matrix — runner was consistently timing out
+
 ## [1.2.3] - 2026-06-10
 
 ### Chores
