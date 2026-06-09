@@ -35,8 +35,30 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Extract changelog entry
+        if: steps.tag_check.outputs.exists == 'false'
+        id: changelog
+        run: |
+          python - <<'PYEOF' >> "$GITHUB_OUTPUT"
+          import re, pathlib
+
+          version = "${{ steps.version.outputs.version }}".lstrip("v")
+          text = pathlib.Path("CHANGELOG.md").read_text()
+
+          # Match the block starting at "## [<version>]" up to the next "## [" or end of file
+          pattern = rf"(## \[{re.escape(version)}\].*?)(?=\n## \[|\Z)"
+          match = re.search(pattern, text, re.DOTALL)
+          entry = match.group(1).strip() if match else f"Release {version}"
+
+          # Write as a multiline GitHub output
+          print("notes<<EOF_NOTES")
+          print(entry)
+          print("EOF_NOTES")
+          PYEOF
+
       - name: Create and push tag
         if: steps.tag_check.outputs.exists == 'false'
         run: |
-          git tag "${{ steps.version.outputs.version }}"
+          git tag -a "${{ steps.version.outputs.version }}" \
+            -m "${{ steps.changelog.outputs.notes }}"
           git push origin "${{ steps.version.outputs.version }}"
